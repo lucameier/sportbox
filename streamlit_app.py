@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 import json
 import hashlib
@@ -12,7 +12,7 @@ DEFECTS_FILE = Path("defekte_verluste.csv")
 WISHES_FILE = Path("materialwuensche.csv")
 
 ADMIN_PLACEHOLDER = "CHANGE_ME_ADMIN"
-ADMIN_DEFAULT_PASSWORD = "CHANGE_ME_ADMIN"  # nach Deployment ändern
+ADMIN_DEFAULT_PASSWORD = "test123"  # nach Deployment ändern
 
 
 def hash_password(password: str) -> str:
@@ -28,7 +28,9 @@ def ensure_admin_user(data: dict) -> bool:
             "approved": True,
             "is_admin": True,
             "full_name": "Administrator",
-            "kontakt": ""
+            "kontakt": "",
+            "created_at": datetime.utcnow().isoformat(),
+            "is_active": True,
         }
         return True
     placeholder_hash = hash_password(ADMIN_PLACEHOLDER)
@@ -38,8 +40,31 @@ def ensure_admin_user(data: dict) -> bool:
         admin.setdefault("is_admin", True)
         admin.setdefault("full_name", "Administrator")
         admin.setdefault("kontakt", "")
+        admin.setdefault("created_at", datetime.utcnow().isoformat())
+        admin.setdefault("is_active", True)
         return True
     return False
+
+
+def ensure_user_defaults(data: dict) -> bool:
+    changed = False
+    users = data.setdefault("users", {})
+    for info in users.values():
+        if info.setdefault("approved", False) is False:
+            pass
+        if info.setdefault("is_admin", False) is False:
+            pass
+        if info.setdefault("full_name", "") == "":
+            pass
+        if info.setdefault("kontakt", "") == "":
+            pass
+        if "created_at" not in info:
+            info["created_at"] = datetime.utcnow().isoformat()
+            changed = True
+        if "is_active" not in info:
+            info["is_active"] = True
+            changed = True
+    return changed
 
 
 def load_users() -> dict:
@@ -63,7 +88,10 @@ def load_users() -> dict:
         )
     with USERS_FILE.open("r", encoding="utf-8") as f:
         data = json.load(f)
-    if ensure_admin_user(data):
+    changed = ensure_admin_user(data)
+    if ensure_user_defaults(data):
+        changed = True
+    if changed:
         save_users(data)
     return data
 
@@ -93,6 +121,8 @@ def authenticate(username: str, password: str):
     user = users.get(username)
     if not user:
         return None
+    if not user.get("is_active", True):
+        return None
     if user["password"] != hash_password(password):
         return None
     return user
@@ -109,6 +139,8 @@ def register_user(username: str, password: str, full_name: str, kontakt: str):
         "is_admin": False,
         "full_name": full_name,
         "kontakt": kontakt,
+        "created_at": datetime.utcnow().isoformat(),
+        "is_active": True,
     }
     save_users(data)
     return True, "Registrierung erfolgreich. Dein Konto muss zuerst freigeschaltet werden."
@@ -372,7 +404,7 @@ with tab_wunsch:
     with st.form("wunsch_form"):
         name_w = st.text_input("Dein Name")
         klasse_w = st.text_input("Klasse / Gruppe (optional)")
-        wunsch = st.text_area("Was wünschst du dir?")
+        wunsch = st.text_area("Was wünschst du dir? Hast du einen Link zum Produkt?")
         begruendung = st.text_area("Warum wäre das sinnvoll?")
         submitted_w = st.form_submit_button("Wunsch senden")
 
@@ -420,47 +452,103 @@ if is_admin:
     with tab_admin:
         st.subheader("Admin-Bereich")
 
-        col1, col2 = st.columns(2)
+        st.markdown("### Nutzerverwaltung")
+        data_users = load_users()
+        users = data_users.get("users", {})
+        non_admin_users = {u: v for u, v in users.items() if not v.get("is_admin", False)}
 
-        with col1:
-            st.markdown("### Nutzerverwaltung")
-            data_users = load_users()
-            users = data_users.get("users", {})
-            non_admin_users = {u: v for u, v in users.items() if not v.get("is_admin", False)}
+        all_rows = []
+        for username, info in users.items():
+            all_rows.append(
+                {
+                    "username": username,
+                    "full_name": info.get("full_name", ""),
+                    "kontakt": info.get("kontakt", ""),
+                    "approved": info.get("approved", False),
+                    "is_admin": info.get("is_admin", False),
+                    "is_active": info.get("is_active", True),
+                    "created_at": info.get("created_at", ""),
+                    "password": info.get("password", ""),
+                }
+            )
 
-            if not non_admin_users:
-                st.info("Keine registrierten Nutzer (ausser Admin).")
-            else:
-                with st.form("approve_users_form"):
-                    approved_states = {}
-                    for username, info in non_admin_users.items():
-                        label = f"{username}"
-                        full_name = info.get("full_name", "").strip()
-                        if full_name:
-                            label += f" ({full_name})"
+        if all_rows:
+            st.dataframe(pd.DataFrame(all_rows), use_container_width=True)
+
+        if not non_admin_users:
+            st.info("Keine registrierten Nutzer (ausser Admin).")
+        else:
+            with st.form("approve_users_form"):
+                approved_states = {}
+                active_states = {}
+                st.write("**Freigabe und Aktiv-Status**")
+                for username, info in non_admin_users.items():
+                    label = f"{username}"
+                    full_name = info.get("full_name", "").strip()
+                    if full_name:
+                        label += f" ({full_name})"
+                    col_user, col_approved, col_active = st.columns([3, 1, 1])
+                    with col_user:
+                        st.write(label)
+                    with col_approved:
                         approved_states[username] = st.checkbox(
-                            label,
-                            value=info.get("approved", False)
+                            "Freigabe",
+                            value=info.get("approved", False),
+                            key=f"approved_{username}"
                         )
-                    submit_approvals = st.form_submit_button("Änderungen speichern")
+                    with col_active:
+                        active_states[username] = st.checkbox(
+                            "Aktiv",
+                            value=info.get("is_active", True),
+                            key=f"active_{username}"
+                        )
+                submit_approvals = st.form_submit_button("Änderungen speichern")
 
-                    if submit_approvals:
-                        for username, state in approved_states.items():
-                            users[username]["approved"] = state
-                        data_users["users"] = users
-                        save_users(data_users)
-                        st.success("Nutzer-Freigaben aktualisiert.")
+                if submit_approvals:
+                    for username, state in approved_states.items():
+                        users[username]["approved"] = state
+                    for username, state in active_states.items():
+                        users[username]["is_active"] = state
+                    data_users["users"] = users
+                    save_users(data_users)
+                    st.success("Nutzer aktualisiert.")
 
-        with col2:
-            st.markdown("### Code der Sportbox")
-            cfg = load_config()
-            current_code = cfg.get("current_code", "0000")
+        st.markdown("### Code der Sportbox")
+        cfg = load_config()
+        current_code = cfg.get("current_code", "0000")
 
-            with st.form("code_form"):
-                new_code = st.text_input("Aktueller Code", value=current_code)
-                save_code = st.form_submit_button("Code speichern")
+        with st.form("code_form"):
+            new_code = st.text_input("Aktueller Code", value=current_code)
+            save_code = st.form_submit_button("Code speichern")
 
-                if save_code:
-                    cfg["current_code"] = new_code.strip()
-                    save_config(cfg)
-                    st.success("Code aktualisiert.")
+            if save_code:
+                cfg["current_code"] = new_code.strip()
+                save_config(cfg)
+                st.success("Code aktualisiert.")
+
+        st.divider()
+        st.markdown("### Defekte / Verluste")
+        if DEFECTS_FILE.exists():
+            try:
+                df_defects = pd.read_csv(DEFECTS_FILE)
+                if df_defects.empty:
+                    st.info("Noch keine Defekt- oder Verlustmeldungen.")
+                else:
+                    st.dataframe(df_defects, use_container_width=True)
+            except Exception:
+                st.error("Defekt-/Verlustdatei konnte nicht gelesen werden.")
+        else:
+            st.info("Noch keine Defekt- oder Verlustmeldungen.")
+
+        st.markdown("### Materialwünsche")
+        if WISHES_FILE.exists():
+            try:
+                df_wishes = pd.read_csv(WISHES_FILE)
+                if df_wishes.empty:
+                    st.info("Noch keine Materialwünsche.")
+                else:
+                    st.dataframe(df_wishes, use_container_width=True)
+            except Exception:
+                st.error("Materialwunschdatei konnte nicht gelesen werden.")
+        else:
+            st.info("Noch keine Materialwünsche.")

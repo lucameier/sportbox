@@ -1,11 +1,22 @@
 {
   "users": {
     "admin": {
-      "password": "6b66959e9027db3bea69c3855368488082affe0688dda35abc634468bcf5ef19",
+      "password": "ecd71870d1963316a97e3ac3408c9835ad8cf0f3c1bc703527c30265534f75ae",
       "approved": true,
       "is_admin": true,
       "full_name": "Administrator",
-      "kontakt": ""
+      "kontakt": "",
+      "created_at": "2026-02-03T14:09:39.999714",
+      "is_active": true
+    },
+    "test": {
+      "password": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "approved": true,
+      "is_admin": false,
+      "full_name": "Luca Testkonto",
+      "kontakt": "076 123 45 67",
+      "created_at": "2026-02-03T14:09:39.999723",
+      "is_active": true
     }
   }
 }
