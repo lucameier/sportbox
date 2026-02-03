@@ -17,6 +17,15 @@
       "kontakt": "076 123 45 67",
       "created_at": "2026-02-03T14:09:39.999723",
       "is_active": true
+    },
+    "test2": {
+      "password": "18ee24150dcb1d96752a4d6dd0f20dfd8ba8c38527e40aa8509b7adecf78f9c6",
+      "approved": false,
+      "is_admin": false,
+      "full_name": "test2",
+      "kontakt": "dsfsd",
+      "created_at": "2026-02-03T16:17:37.770032",
+      "is_active": true
     }
   }
 }
