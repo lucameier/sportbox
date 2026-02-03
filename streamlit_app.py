@@ -10,9 +10,173 @@ USERS_FILE = Path("users.json")
 CONFIG_FILE = Path("config.json")
 DEFECTS_FILE = Path("defekte_verluste.csv")
 WISHES_FILE = Path("materialwuensche.csv")
+MATERIALS_FILE = Path("materials.json")
 
 ADMIN_PLACEHOLDER = "CHANGE_ME_ADMIN"
 ADMIN_DEFAULT_PASSWORD = "test123"  # nach Deployment ändern
+
+DEFAULT_MATERIALS = [
+    {
+        "kategorie": "Tischtennis",
+        "name": "Table Tennis Balls TTB 100 1 40+ 72-Pack",
+        "marke": "PONGORI",
+        "menge": 72,
+        "einheit": "Stück",
+        "preis": "CHF 21.90",
+        "details": "Farbe: weiss",
+        "bild": "https://contents.mediadecathlon.com/p2464340/k$1d8c0f4d79c001f3a64588711769302c/picture.jpg",
+    },
+    {
+        "kategorie": "Tischtennis",
+        "name": "Table Tennis Durable Bat PPR 100",
+        "marke": "PONGORI",
+        "menge": 5,
+        "einheit": "Schläger",
+        "preis": "CHF 20.00",
+        "details": "Grösse: Gerade",
+        "bild": "https://contents.mediadecathlon.com/p2724645/k$897137ef918fefe64aa799541d087496/picture.jpg",
+    },
+    {
+        "kategorie": "Unihockey",
+        "name": "Floorball 100",
+        "marke": "OROKS",
+        "menge": 3,
+        "einheit": "Bälle",
+        "preis": "CHF 8.70",
+        "details": "Farbe: säuregelb fluo",
+        "bild": "https://contents.mediadecathlon.com/p2542167/k$62065afd16294a04cda896d8b8db721e/picture.jpg",
+    },
+    {
+        "kategorie": "Tennis",
+        "name": "Versatile Tennis Ball 4-Pack Pro",
+        "marke": "ZOGGS",
+        "menge": 1,
+        "einheit": "Dose",
+        "preis": "CHF 7.90",
+        "details": "Farbe: gelb",
+        "bild": "https://contents.mediadecathlon.com/p2362832/k$e3b459253b5f11b2c5d1f7fca3779b71/picture.jpg",
+    },
+    {
+        "kategorie": "Fussball",
+        "name": "Size 5 FIFA Basic Football Club Hybrid",
+        "marke": "KIPSTA",
+        "menge": 1,
+        "einheit": "Ball",
+        "preis": "CHF 15.90",
+        "details": "Grösse: 5, Farbe: ultraweiss",
+        "bild": "https://contents.mediadecathlon.com/p2571324/k$b8eb7ffc64e71f30ff4188ccb001e17d/picture.jpg",
+    },
+    {
+        "kategorie": "Fussball",
+        "name": "Mini Football Sunny 300",
+        "marke": "KIPSTA",
+        "menge": 1,
+        "einheit": "Ball",
+        "preis": "CHF 3.40",
+        "details": "Grösse: 1, Farbe: hellrosa",
+        "bild": "https://contents.mediadecathlon.com/p2380010/k$f66228ef9242e218c998caccf15fa16b/picture.jpg",
+    },
+    {
+        "kategorie": "Basketball",
+        "name": "Size 7 Basketball Orange - R100",
+        "marke": "TARMAK",
+        "menge": 1,
+        "einheit": "Ball",
+        "preis": "CHF 7.40",
+        "details": "Grösse: 7, Farbe: orange",
+        "bild": "https://contents.mediadecathlon.com/p2942869/k$8ec6feb0da0b1b4b2f6804d7f76ef018/picture.jpg",
+    },
+    {
+        "kategorie": "Basketball",
+        "name": "Beginners' Size 5 Basketball R100",
+        "marke": "TARMAK",
+        "menge": 1,
+        "einheit": "Ball",
+        "preis": "CHF 7.40",
+        "details": "Grösse: 5, Farbe: gelb",
+        "bild": "https://contents.mediadecathlon.com/p3049999/k$eec4ea0971078b99b5d47ad1123abfa2/picture.jpg",
+    },
+    {
+        "kategorie": "Volleyball",
+        "name": "Volleyball size 1 Kid, VB light blue",
+        "marke": "ALLSIX",
+        "menge": 1,
+        "einheit": "Ball",
+        "preis": "CHF 6.00",
+        "details": "Grösse: 1",
+        "bild": "https://contents.mediadecathlon.com/p2704069/k$4ad961bc1a70d321effed1ee072ac039/picture.jpg",
+    },
+    {
+        "kategorie": "Volleyball",
+        "name": "Beach Volleyball Size 5 BV100 Classic",
+        "marke": "KIPSTA",
+        "menge": 1,
+        "einheit": "Ball",
+        "preis": "CHF 11.90",
+        "details": "Grösse: 5, Farbe: bunt",
+        "bild": "https://contents.mediadecathlon.com/p2637141/k$a1476de5ca06243a0b4b19debd1ab579/picture.jpg",
+    },
+    {
+        "kategorie": "Badminton",
+        "name": "ADULT BADMINTON RACKET LEISURE BR 100 RED",
+        "marke": "DECATHLON",
+        "menge": 6,
+        "einheit": "Schläger",
+        "preis": "CHF 35.40",
+        "details": "Farbe: rot",
+        "bild": "https://contents.mediadecathlon.com/p2925527/k$47fbbf8923253b3dc26d17557dd612e2/picture.jpg",
+    },
+    {
+        "kategorie": "Badminton",
+        "name": "PSC 100 MEDIUM PLASTIC SHUTTLECOCK x 6",
+        "marke": "DECATHLON",
+        "menge": 2,
+        "einheit": "Dosen",
+        "preis": "CHF 15.80",
+        "details": "Farbe: weiss",
+        "bild": "https://contents.mediadecathlon.com/p1588382/k$c148bc3f66f02999fa988d6fc77f5617/picture.jpg",
+    },
+    {
+        "kategorie": "Training",
+        "name": "Essential Pack Of 40 Flat Markers",
+        "marke": "KIPSTA",
+        "menge": 40,
+        "einheit": "Hütchen",
+        "preis": "CHF 21.90",
+        "details": "Set: gelb/orange/grau/blau",
+        "bild": "https://contents.mediadecathlon.com/p1759957/k$8f687d219afdb9e7bdeca918653e50b0/picture.jpg",
+    },
+    {
+        "kategorie": "Zubehör",
+        "name": "Single Action Ball Pump Essential",
+        "marke": "KIPSTA",
+        "menge": 1,
+        "einheit": "Pumpe",
+        "preis": "CHF 9.90",
+        "details": "Farbe: orange/schwarz",
+        "bild": "https://contents.mediadecathlon.com/p2439549/k$65c77e53b85c61bd89fa51d68ec49379/picture.jpg",
+    },
+    {
+        "kategorie": "Zubehör",
+        "name": "Black Plastic Whistle",
+        "marke": "KIPSTA",
+        "menge": 1,
+        "einheit": "Pfeife",
+        "preis": "CHF 3.90",
+        "details": "Farbe: schwarz",
+        "bild": "https://contents.mediadecathlon.com/p1686207/k$67dc05955abc2789432ab8da76e46ecc/picture.jpg",
+    },
+    {
+        "kategorie": "Winter",
+        "name": "Snow shovel sledge - Funny Slide",
+        "marke": "WEDZE",
+        "menge": 5,
+        "einheit": "Po-Rutscher",
+        "preis": "CHF 24.00",
+        "details": "Zufallsfarbe",
+        "bild": "https://contents.mediadecathlon.com/p2613913/k$4954caba35867027c7780f22c15f25e7/picture.jpg",
+    },
+]
 
 
 def hash_password(password: str) -> str:
@@ -114,6 +278,48 @@ def load_config() -> dict:
 def save_config(data: dict) -> None:
     with CONFIG_FILE.open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
+
+def load_materials() -> list:
+    if not MATERIALS_FILE.exists():
+        MATERIALS_FILE.write_text(
+            json.dumps(DEFAULT_MATERIALS, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    with MATERIALS_FILE.open("r", encoding="utf-8") as f:
+        materials = json.load(f)
+    if not isinstance(materials, list):
+        materials = []
+    normalized = []
+    for item in materials:
+        if not isinstance(item, dict):
+            continue
+        normalized.append(
+            {
+                "kategorie": item.get("kategorie", ""),
+                "name": item.get("name", ""),
+                "marke": item.get("marke", ""),
+                "menge": item.get("menge", ""),
+                "einheit": item.get("einheit", ""),
+                "preis": item.get("preis", ""),
+                "details": item.get("details", ""),
+                "bild": item.get("bild", ""),
+            }
+        )
+    return normalized
+
+
+def save_materials(materials: list) -> None:
+    with MATERIALS_FILE.open("w", encoding="utf-8") as f:
+        json.dump(materials, f, indent=2, ensure_ascii=False)
+
+
+def material_options(materials: list) -> list:
+    names = [item.get("name", "").strip() for item in materials]
+    names = [name for name in names if name]
+    if not names:
+        return ["Anderes"]
+    return names + ["Anderes"]
 
 
 def authenticate(username: str, password: str):
@@ -264,7 +470,7 @@ else:
 with tab_info:
     st.subheader("Regeln für die Nutzung")
     if Path("bild.png").exists():
-        st.image("bild.png", caption="Aktueller Inhalt und Ordnung", use_container_width=True)
+        st.image("bild.png", caption="Aktueller Inhalt und Ordnung", width=700)
     st.markdown("""
 **Wer darf die Sportbox benutzen?**
 
@@ -306,26 +512,34 @@ Bei Fragen oder Rückmeldungen:
 
 with tab_material:
     st.subheader("Aktuelle Ausstattung der Sportbox")
-    data = [
-        ["Tischtennis", "Tischtennisbälle PONGORI TTB100 (weiss)", 72, "Bälle"],
-        ["Tischtennis", "Tischtennisschläger PONGORI PPR 100", 5, "Schläger"],
-        ["Unihockey", "Unihockeybälle OROKS 100 (gelb)", 3, "Bälle"],
-        ["Tennis", "Tennisbälle Head Pro (Dose à 4)", 1, "Dose"],
-        ["Fussball", "Fussball KIPSTA Hybrid FIFA Basic, Grösse 5 (weiss)", 1, "Ball"],
-        ["Fussball", "Mini-Fussball KIPSTA Sunny 300, Grösse 1 (rosa)", 1, "Ball"],
-        ["Basketball", "Basketball TARMAK R100, Grösse 7 (orange)", 1, "Ball"],
-        ["Basketball", "Basketball TARMAK R100, Grösse 5 (gelb)", 1, "Ball"],
-        ["Volleyball", "Kinder-Volleyball ALLSIX, Grösse 1 (blau)", 1, "Ball"],
-        ["Volleyball", "Beachvolleyball KIPSTA BV100, Grösse 5 (bunt)", 1, "Ball"],
-        ["Badminton", "Badmintonschläger DECATHLON BR 100 (rot)", 6, "Schläger"],
-        ["Badminton", "Kunststoff-Federbälle PSC 100, Dose à 6", 2, "Dosen"],
-        ["Training", "Trainingshütchen KIPSTA Essential (Set)", 40, "Hütchen"],
-        ["Zubehör", "Ballpumpe KIPSTA Essentiel", 1, "Pumpe"],
-        ["Zubehör", "Plastikpfeife KIPSTA", 1, "Pfeife"],
-        ["Winter", "Schlitten Po-Rutscher Wedze 'Funny Slide'", 5, "Po-Rutscher"],
-    ]
-    df = pd.DataFrame(data, columns=["Kategorie", "Artikel", "Anzahl", "Einheit"])
-    st.dataframe(df, use_container_width=True)
+    items = load_materials()
+
+    cols = st.columns(3)
+    for idx, item in enumerate(items):
+        col = cols[idx % 3]
+        with col:
+            with st.container(border=True):
+
+                st.markdown(f"**{item['name']}**")
+                
+                st.image(item["bild"], width=240)
+
+                st.markdown(
+                    f"<div style='margin: 0;'>{item['kategorie']}</div>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<div style='margin: 0;'>{item['menge']} {item['einheit']}</div>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<div style='margin: 0;'>{item['preis']}</div>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<div style='margin: 0;'>{item['details']}</div>",
+                    unsafe_allow_html=True,
+                )
 
 with tab_defekt:
     st.subheader("Defekt oder Verlust melden")
@@ -336,27 +550,10 @@ with tab_defekt:
         kontakt = st.text_input("Kontakt (WhatsApp / E-Mail, optional)")
         datum = st.date_input("Datum", value=date.today())
         art = st.selectbox("Art der Meldung", ["Defekt", "Verlust"])
+        materials = load_materials()
         material = st.selectbox(
             "Betroffenes Material",
-            [
-                "Tischtennisbälle",
-                "Tischtennisschläger",
-                "Unihockeyball",
-                "Tennisball",
-                "Fussball Gr. 5",
-                "Mini-Fussball Gr. 1",
-                "Basketball Gr. 7",
-                "Basketball Gr. 5",
-                "Kinder-Volleyball",
-                "Beachvolleyball",
-                "Badmintonschläger",
-                "Badminton-Federball",
-                "Trainingshütchen",
-                "Ballpumpe",
-                "Plastikpfeife",
-                "Schlitten Po-Rutscher",
-                "Anderes"
-            ]
+            material_options(materials),
         )
         anzahl = st.number_input("Anzahl betroffen", min_value=1, step=1, value=1)
         beschreibung = st.text_area(
@@ -408,7 +605,7 @@ with tab_wunsch:
 
     with st.form("wunsch_form"):
         name_w = st.text_input("Dein Name")
-        klasse_w = st.text_input("Klasse / Gruppe (optional)")
+        kontakt_w = st.text_input("Kontakt (WhatsApp / E-Mail, optional)")
         wunsch = st.text_area("Was wünschst du dir? Hast du einen Link zum Produkt?")
         begruendung = st.text_area("Warum wäre das sinnvoll?")
         submitted_w = st.form_submit_button("Wunsch senden")
@@ -417,7 +614,7 @@ with tab_wunsch:
             row = {
                 "timestamp": pd.Timestamp.utcnow().isoformat(),
                 "name": name_w,
-                "klasse": klasse_w,
+                "kontakt": kontakt_w,
                 "wunsch": wunsch,
                 "begruendung": begruendung,
                 "user": user or "",
@@ -427,7 +624,7 @@ with tab_wunsch:
                 fieldnames=[
                     "timestamp",
                     "name",
-                    "klasse",
+                    "kontakt",
                     "wunsch",
                     "begruendung",
                     "user",
@@ -437,7 +634,7 @@ with tab_wunsch:
             st.success("Danke für deinen Vorschlag! Er wurde gespeichert.")
             st.write("**Dein Wunsch:**")
             st.write(f"- Name: {name_w}")
-            st.write(f"- Klasse / Gruppe: {klasse_w}")
+            st.write(f"- Kontakt: {kontakt_w}")
             st.write(f"- Wunsch: {wunsch}")
             st.write(f"- Begründung: {begruendung}")
 
@@ -531,6 +728,60 @@ if is_admin:
                 save_config(cfg)
                 st.success("Code aktualisiert.")
 
+        st.divider()
+        st.markdown("### Material verwalten")
+        materials = load_materials()
+        df_materials = pd.DataFrame(materials)
+        material_columns = [
+            "kategorie",
+            "name",
+            "marke",
+            "menge",
+            "einheit",
+            "preis",
+            "details",
+            "bild",
+        ]
+        if df_materials.empty:
+            df_materials = pd.DataFrame(columns=material_columns)
+        else:
+            df_materials = df_materials.reindex(columns=material_columns)
+
+        with st.form("materials_form"):
+            edited_materials = st.data_editor(
+                df_materials,
+                num_rows="dynamic",
+                use_container_width=True,
+            )
+            save_materials_btn = st.form_submit_button("Material speichern")
+
+        if save_materials_btn:
+            cleaned = []
+            records = edited_materials.to_dict(orient="records")
+            for row in records:
+                cleaned_row = {}
+                empty_row = True
+                for col in material_columns:
+                    value = row.get(col, "")
+                    if pd.isna(value):
+                        value = ""
+                    if isinstance(value, str):
+                        value = value.strip()
+                    if value != "":
+                        empty_row = False
+                    cleaned_row[col] = value
+                if empty_row:
+                    continue
+                menge = cleaned_row.get("menge", "")
+                try:
+                    if menge != "":
+                        menge_int = int(float(menge))
+                        cleaned_row["menge"] = menge_int
+                except (ValueError, TypeError):
+                    pass
+                cleaned.append(cleaned_row)
+            save_materials(cleaned)
+            st.success("Material gespeichert.")
         st.divider()
         st.markdown("### Defekte / Verluste")
         if DEFECTS_FILE.exists():
