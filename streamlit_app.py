@@ -199,6 +199,7 @@ with st.sidebar:
                 reg_kontakt = st.text_input("Kontakt (E-Mail / Handy, optional)")
                 reg_password = st.text_input("Passwort", type="password")
                 reg_password2 = st.text_input("Passwort wiederholen", type="password")
+                reg_rules = st.checkbox("Ich halte mich an die Regeln")
                 reg_submitted = st.form_submit_button("Registrieren")
 
             if reg_submitted:
@@ -208,6 +209,8 @@ with st.sidebar:
                     st.error("Benutzername darf nicht leer sein.")
                 elif not reg_password:
                     st.error("Passwort darf nicht leer sein.")
+                elif not reg_rules:
+                    st.error("Bitte bestätige, dass du dich an die Regeln hältst.")
                 else:
                     ok, msg = register_user(
                         reg_username,
@@ -260,6 +263,8 @@ else:
 
 with tab_info:
     st.subheader("Regeln für die Nutzung")
+    if Path("bild.png").exists():
+        st.image("bild.png", caption="Aktueller Inhalt und Ordnung", use_container_width=True)
     st.markdown("""
 **Wer darf die Sportbox benutzen?**
 
