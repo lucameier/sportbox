@@ -11,11 +11,35 @@ CONFIG_FILE = Path("config.json")
 DEFECTS_FILE = Path("defekte_verluste.csv")
 WISHES_FILE = Path("materialwuensche.csv")
 
+ADMIN_PLACEHOLDER = "CHANGE_ME_ADMIN"
 ADMIN_DEFAULT_PASSWORD = "CHANGE_ME_ADMIN"  # nach Deployment ändern
 
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+
+def ensure_admin_user(data: dict) -> bool:
+    users = data.setdefault("users", {})
+    admin = users.get("admin")
+    if not admin:
+        users["admin"] = {
+            "password": hash_password(ADMIN_DEFAULT_PASSWORD),
+            "approved": True,
+            "is_admin": True,
+            "full_name": "Administrator",
+            "kontakt": ""
+        }
+        return True
+    placeholder_hash = hash_password(ADMIN_PLACEHOLDER)
+    if admin.get("password") == placeholder_hash and ADMIN_DEFAULT_PASSWORD != ADMIN_PLACEHOLDER:
+        admin["password"] = hash_password(ADMIN_DEFAULT_PASSWORD)
+        admin.setdefault("approved", True)
+        admin.setdefault("is_admin", True)
+        admin.setdefault("full_name", "Administrator")
+        admin.setdefault("kontakt", "")
+        return True
+    return False
 
 
 def load_users() -> dict:
@@ -38,7 +62,10 @@ def load_users() -> dict:
             encoding="utf-8",
         )
     with USERS_FILE.open("r", encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+    if ensure_admin_user(data):
+        save_users(data)
+    return data
 
 
 def save_users(data: dict) -> None:
