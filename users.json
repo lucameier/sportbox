@@ -1,0 +1,11 @@
+{
+  "users": {
+    "admin": {
+      "password": "6b66959e9027db3bea69c3855368488082affe0688dda35abc634468bcf5ef19",
+      "approved": true,
+      "is_admin": true,
+      "full_name": "Administrator",
+      "kontakt": ""
+    }
+  }
+}
