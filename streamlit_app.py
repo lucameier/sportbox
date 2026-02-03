@@ -15,170 +15,6 @@ MATERIALS_FILE = Path("materials.json")
 ADMIN_PLACEHOLDER = "CHANGE_ME_ADMIN"
 ADMIN_DEFAULT_PASSWORD = "test123"  # nach Deployment ändern
 
-DEFAULT_MATERIALS = [
-    {
-        "kategorie": "Tischtennis",
-        "name": "Table Tennis Balls TTB 100 1 40+ 72-Pack",
-        "marke": "PONGORI",
-        "menge": 72,
-        "einheit": "Stück",
-        "preis": "CHF 21.90",
-        "details": "Farbe: weiss",
-        "bild": "https://contents.mediadecathlon.com/p2464340/k$1d8c0f4d79c001f3a64588711769302c/picture.jpg",
-    },
-    {
-        "kategorie": "Tischtennis",
-        "name": "Table Tennis Durable Bat PPR 100",
-        "marke": "PONGORI",
-        "menge": 5,
-        "einheit": "Schläger",
-        "preis": "CHF 20.00",
-        "details": "Grösse: Gerade",
-        "bild": "https://contents.mediadecathlon.com/p2724645/k$897137ef918fefe64aa799541d087496/picture.jpg",
-    },
-    {
-        "kategorie": "Unihockey",
-        "name": "Floorball 100",
-        "marke": "OROKS",
-        "menge": 3,
-        "einheit": "Bälle",
-        "preis": "CHF 8.70",
-        "details": "Farbe: säuregelb fluo",
-        "bild": "https://contents.mediadecathlon.com/p2542167/k$62065afd16294a04cda896d8b8db721e/picture.jpg",
-    },
-    {
-        "kategorie": "Tennis",
-        "name": "Versatile Tennis Ball 4-Pack Pro",
-        "marke": "ZOGGS",
-        "menge": 1,
-        "einheit": "Dose",
-        "preis": "CHF 7.90",
-        "details": "Farbe: gelb",
-        "bild": "https://contents.mediadecathlon.com/p2362832/k$e3b459253b5f11b2c5d1f7fca3779b71/picture.jpg",
-    },
-    {
-        "kategorie": "Fussball",
-        "name": "Size 5 FIFA Basic Football Club Hybrid",
-        "marke": "KIPSTA",
-        "menge": 1,
-        "einheit": "Ball",
-        "preis": "CHF 15.90",
-        "details": "Grösse: 5, Farbe: ultraweiss",
-        "bild": "https://contents.mediadecathlon.com/p2571324/k$b8eb7ffc64e71f30ff4188ccb001e17d/picture.jpg",
-    },
-    {
-        "kategorie": "Fussball",
-        "name": "Mini Football Sunny 300",
-        "marke": "KIPSTA",
-        "menge": 1,
-        "einheit": "Ball",
-        "preis": "CHF 3.40",
-        "details": "Grösse: 1, Farbe: hellrosa",
-        "bild": "https://contents.mediadecathlon.com/p2380010/k$f66228ef9242e218c998caccf15fa16b/picture.jpg",
-    },
-    {
-        "kategorie": "Basketball",
-        "name": "Size 7 Basketball Orange - R100",
-        "marke": "TARMAK",
-        "menge": 1,
-        "einheit": "Ball",
-        "preis": "CHF 7.40",
-        "details": "Grösse: 7, Farbe: orange",
-        "bild": "https://contents.mediadecathlon.com/p2942869/k$8ec6feb0da0b1b4b2f6804d7f76ef018/picture.jpg",
-    },
-    {
-        "kategorie": "Basketball",
-        "name": "Beginners' Size 5 Basketball R100",
-        "marke": "TARMAK",
-        "menge": 1,
-        "einheit": "Ball",
-        "preis": "CHF 7.40",
-        "details": "Grösse: 5, Farbe: gelb",
-        "bild": "https://contents.mediadecathlon.com/p3049999/k$eec4ea0971078b99b5d47ad1123abfa2/picture.jpg",
-    },
-    {
-        "kategorie": "Volleyball",
-        "name": "Volleyball size 1 Kid, VB light blue",
-        "marke": "ALLSIX",
-        "menge": 1,
-        "einheit": "Ball",
-        "preis": "CHF 6.00",
-        "details": "Grösse: 1",
-        "bild": "https://contents.mediadecathlon.com/p2704069/k$4ad961bc1a70d321effed1ee072ac039/picture.jpg",
-    },
-    {
-        "kategorie": "Volleyball",
-        "name": "Beach Volleyball Size 5 BV100 Classic",
-        "marke": "KIPSTA",
-        "menge": 1,
-        "einheit": "Ball",
-        "preis": "CHF 11.90",
-        "details": "Grösse: 5, Farbe: bunt",
-        "bild": "https://contents.mediadecathlon.com/p2637141/k$a1476de5ca06243a0b4b19debd1ab579/picture.jpg",
-    },
-    {
-        "kategorie": "Badminton",
-        "name": "ADULT BADMINTON RACKET LEISURE BR 100 RED",
-        "marke": "DECATHLON",
-        "menge": 6,
-        "einheit": "Schläger",
-        "preis": "CHF 35.40",
-        "details": "Farbe: rot",
-        "bild": "https://contents.mediadecathlon.com/p2925527/k$47fbbf8923253b3dc26d17557dd612e2/picture.jpg",
-    },
-    {
-        "kategorie": "Badminton",
-        "name": "PSC 100 MEDIUM PLASTIC SHUTTLECOCK x 6",
-        "marke": "DECATHLON",
-        "menge": 2,
-        "einheit": "Dosen",
-        "preis": "CHF 15.80",
-        "details": "Farbe: weiss",
-        "bild": "https://contents.mediadecathlon.com/p1588382/k$c148bc3f66f02999fa988d6fc77f5617/picture.jpg",
-    },
-    {
-        "kategorie": "Training",
-        "name": "Essential Pack Of 40 Flat Markers",
-        "marke": "KIPSTA",
-        "menge": 40,
-        "einheit": "Hütchen",
-        "preis": "CHF 21.90",
-        "details": "Set: gelb/orange/grau/blau",
-        "bild": "https://contents.mediadecathlon.com/p1759957/k$8f687d219afdb9e7bdeca918653e50b0/picture.jpg",
-    },
-    {
-        "kategorie": "Zubehör",
-        "name": "Single Action Ball Pump Essential",
-        "marke": "KIPSTA",
-        "menge": 1,
-        "einheit": "Pumpe",
-        "preis": "CHF 9.90",
-        "details": "Farbe: orange/schwarz",
-        "bild": "https://contents.mediadecathlon.com/p2439549/k$65c77e53b85c61bd89fa51d68ec49379/picture.jpg",
-    },
-    {
-        "kategorie": "Zubehör",
-        "name": "Black Plastic Whistle",
-        "marke": "KIPSTA",
-        "menge": 1,
-        "einheit": "Pfeife",
-        "preis": "CHF 3.90",
-        "details": "Farbe: schwarz",
-        "bild": "https://contents.mediadecathlon.com/p1686207/k$67dc05955abc2789432ab8da76e46ecc/picture.jpg",
-    },
-    {
-        "kategorie": "Winter",
-        "name": "Snow shovel sledge - Funny Slide",
-        "marke": "WEDZE",
-        "menge": 5,
-        "einheit": "Po-Rutscher",
-        "preis": "CHF 24.00",
-        "details": "Zufallsfarbe",
-        "bild": "https://contents.mediadecathlon.com/p2613913/k$4954caba35867027c7780f22c15f25e7/picture.jpg",
-    },
-]
-
-
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
@@ -283,7 +119,7 @@ def save_config(data: dict) -> None:
 def load_materials() -> list:
     if not MATERIALS_FILE.exists():
         MATERIALS_FILE.write_text(
-            json.dumps(DEFAULT_MATERIALS, indent=2, ensure_ascii=False),
+            json.dumps([], indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
     with MATERIALS_FILE.open("r", encoding="utf-8") as f:
@@ -648,7 +484,65 @@ with tab_code:
     else:
         cfg = load_config()
         st.info("Bitte gib den Code nicht an Unbeteiligte weiter.")
-        st.code(cfg.get("current_code", "----"), language="text")
+        current_code = str(cfg.get("current_code", "----")).strip()
+        if current_code == "":
+            current_code = "----"
+        digits = list(current_code)
+
+        st.markdown(
+            """
+            <style>
+            .lock-wrap {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                justify-content: center;
+                padding: 14px 18px;
+                background: linear-gradient(180deg, #f3f5f9 0%, #e7ebf3 100%);
+                border: 1px solid #d4d9e4;
+                border-radius: 14px;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+                max-width: 420px;
+                margin: 0 auto;
+            }
+            .lock-digit {
+                width: 56px;
+                height: 72px;
+                border-radius: 10px;
+                background: linear-gradient(180deg, #ffffff 0%, #dfe4ee 100%);
+                border: 1px solid #c6ccda;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 32px;
+                font-weight: 700;
+                color: #202636;
+                text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.08);
+                font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            }
+            .lock-divider {
+                width: 6px;
+                height: 56px;
+                border-radius: 999px;
+                background: #b6bdcc;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        html_digits = []
+        for i, digit in enumerate(digits):
+            html_digits.append(f"<div class='lock-digit'>{digit}</div>")
+            if i < len(digits) - 1:
+                html_digits.append("<div class='lock-divider'></div>")
+
+        st.markdown(
+            f"<div class='lock-wrap'>{''.join(html_digits)}</div>",
+            unsafe_allow_html=True,
+        )
 
 if is_admin:
     with tab_admin:
