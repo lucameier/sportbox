@@ -13,6 +13,7 @@ CONFIG_FILE = Path("config.json")
 DEFECTS_FILE = Path("defekte_verluste.csv")
 WISHES_FILE = Path("materialwuensche.csv")
 MATERIALS_FILE = Path("materials.json")
+VISITS_FILE = Path("besuche.csv")
 
 ADMIN_PLACEHOLDER = "CHANGE_ME_ADMIN"
 ADMIN_DEFAULT_PASSWORD = "test123"  # nach Deployment ändern
@@ -246,6 +247,14 @@ def authenticate_admin(username: str, password: str):
     return user
 
 
+def log_event(ereignis: str) -> None:
+    append_row_to_csv(
+        VISITS_FILE,
+        fieldnames=["timestamp", "ereignis"],
+        row={"timestamp": utc_now(), "ereignis": ereignis},
+    )
+
+
 def append_row_to_csv(path: Path, fieldnames, row: dict):
     file_exists = path.exists()
     with path.open("a", newline="", encoding="utf-8") as csvfile:
@@ -326,6 +335,7 @@ def render_code_gate() -> None:
         ):
             if agrees:
                 st.session_state.rules_accepted = True
+                log_event("code")
                 st.rerun()
         return
 
@@ -565,6 +575,30 @@ def render_admin() -> None:
     else:
         st.info("Noch keine Defekt- oder Verlustmeldungen.")
 
+    st.markdown("### Aufrufe")
+    if VISITS_FILE.exists():
+        try:
+            df_visits = pd.read_csv(VISITS_FILE)
+            if df_visits.empty:
+                st.info("Noch keine Aufrufe.")
+            else:
+                labels = {"aufruf": "Seitenaufruf", "code": "Code angesehen"}
+                shown = df_visits.copy()
+                if "ereignis" in shown.columns:
+                    shown["ereignis"] = shown["ereignis"].map(
+                        lambda value: labels.get(value, value)
+                    )
+                shown = shown.rename(
+                    columns={"timestamp": "Zeitpunkt", "ereignis": "Ereignis"}
+                )
+                if "Zeitpunkt" in shown.columns:
+                    shown = shown.iloc[::-1]
+                st.dataframe(shown, width="stretch", hide_index=True)
+        except Exception:
+            st.error("Aufrufdatei konnte nicht gelesen werden.")
+    else:
+        st.info("Noch keine Aufrufe.")
+
     st.markdown("### Materialwünsche")
     if WISHES_FILE.exists():
         try:
@@ -608,6 +642,9 @@ def init_session() -> None:
     st.session_state.setdefault("user", None)
     st.session_state.setdefault("is_admin", False)
     st.session_state.setdefault("rules_accepted", False)
+    if not st.session_state.get("visit_logged"):
+        log_event("aufruf")
+        st.session_state.visit_logged = True
 
 
 st.set_page_config(
