@@ -1,10 +1,12 @@
-import streamlit as st
-import pandas as pd
-from datetime import date, datetime
-from pathlib import Path
-import json
-import hashlib
 import csv
+import hashlib
+import html
+import json
+from datetime import date, datetime, timezone
+from pathlib import Path
+
+import pandas as pd
+import streamlit as st
 
 USERS_FILE = Path("users.json")
 CONFIG_FILE = Path("config.json")
@@ -14,6 +16,110 @@ MATERIALS_FILE = Path("materials.json")
 
 ADMIN_PLACEHOLDER = "CHANGE_ME_ADMIN"
 ADMIN_DEFAULT_PASSWORD = "test123"  # nach Deployment ändern
+
+LOCK_CSS = """
+<style>
+.lock-wrap {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: linear-gradient(180deg, #f3f5f9 0%, #e7ebf3 100%);
+    border: 1px solid #d4d9e4;
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+    margin: 0.4rem 0 0.8rem 0;
+}
+.lock-digit {
+    width: 56px;
+    height: 72px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #ffffff 0%, #dfe4ee 100%);
+    border: 1px solid #c6ccda;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 700;
+    color: #202636;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.08);
+    font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+.lock-divider {
+    width: 6px;
+    height: 56px;
+    border-radius: 999px;
+    background: #b6bdcc;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+}
+</style>
+"""
+
+RULES_MARKDOWN = """
+**Wer darf die Sportbox benutzen?**
+
+- Die Sportbox ist für Kinder und Jugendliche aus Henggart und deren Begleitpersonen.
+- Den Zahlencode gibt es erst, nachdem die Regeln hier bestätigt wurden.
+- Der Code darf nicht an Unbeteiligte weitergegeben werden.
+
+**So funktioniert die Ausleihe**
+
+1. Regeln bestätigen und den Code ablesen.
+2. Box mit dem Code öffnen.
+3. Material auswählen und sorgfältig herausnehmen.
+4. Nach dem Spielen:
+   - Alles vollständig wieder zurücklegen
+   - Stark verschmutztes Material kurz reinigen
+   - Box wieder schliessen und Zahlen verdrehen
+
+**Sorgfältiger Umgang mit dem Material**
+
+- Geht mit allen Sachen so um, als wären es eure eigenen.
+- Verwendet das Material nur für den vorgesehenen Zweck.
+- Kein mutwilliges Beschädigen des Materials.
+
+**Defekte und Verluste**
+
+- Meldet Defekte oder Verluste möglichst rasch über das Formular auf dieser Seite.
+- Nur so können wir Material reparieren oder ersetzen.
+
+**Sicherheit**
+
+- Achtet auf andere Kinder, Velos, Autos und Fenster.
+- Kein Spielen auf der Strasse oder an gefährlichen Orten.
+"""
+
+# Zeichen der Kontaktadresse, damit sie nicht als Klartext im HTML steht.
+CONTACT_CHAR_CODES = (
+    107,
+    111,
+    110,
+    116,
+    97,
+    107,
+    116,
+    64,
+    108,
+    117,
+    99,
+    97,
+    109,
+    101,
+    105,
+    101,
+    114,
+    46,
+    99,
+    104,
+)
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
@@ -29,7 +135,7 @@ def ensure_admin_user(data: dict) -> bool:
             "is_admin": True,
             "full_name": "Administrator",
             "kontakt": "",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": utc_now(),
             "is_active": True,
         }
         return True
@@ -40,58 +146,21 @@ def ensure_admin_user(data: dict) -> bool:
         admin.setdefault("is_admin", True)
         admin.setdefault("full_name", "Administrator")
         admin.setdefault("kontakt", "")
-        admin.setdefault("created_at", datetime.utcnow().isoformat())
+        admin.setdefault("created_at", utc_now())
         admin.setdefault("is_active", True)
         return True
     return False
 
 
-def ensure_user_defaults(data: dict) -> bool:
-    changed = False
-    users = data.setdefault("users", {})
-    for info in users.values():
-        if info.setdefault("approved", False) is False:
-            pass
-        if info.setdefault("is_admin", False) is False:
-            pass
-        if info.setdefault("full_name", "") == "":
-            pass
-        if info.setdefault("kontakt", "") == "":
-            pass
-        if "created_at" not in info:
-            info["created_at"] = datetime.utcnow().isoformat()
-            changed = True
-        if "is_active" not in info:
-            info["is_active"] = True
-            changed = True
-    return changed
-
-
 def load_users() -> dict:
     if not USERS_FILE.exists():
-        USERS_FILE.write_text(
-            json.dumps(
-                {
-                    "users": {
-                        "admin": {
-                            "password": hash_password(ADMIN_DEFAULT_PASSWORD),
-                            "approved": True,
-                            "is_admin": True,
-                            "full_name": "Administrator",
-                            "kontakt": ""
-                        }
-                    }
-                },
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
+        data = {"users": {}}
+        ensure_admin_user(data)
+        save_users(data)
+        return data
     with USERS_FILE.open("r", encoding="utf-8") as f:
         data = json.load(f)
-    changed = ensure_admin_user(data)
-    if ensure_user_defaults(data):
-        changed = True
-    if changed:
+    if ensure_admin_user(data):
         save_users(data)
     return data
 
@@ -158,34 +227,23 @@ def material_options(materials: list) -> list:
     return names + ["Anderes"]
 
 
-def authenticate(username: str, password: str):
-    users = load_users().get("users", {})
-    user = users.get(username)
-    if not user:
+def group_materials(materials: list) -> dict:
+    grouped = {}
+    for item in materials:
+        category = (item.get("kategorie") or "").strip() or "Weiteres"
+        grouped.setdefault(category, []).append(item)
+    return grouped
+
+
+def authenticate_admin(username: str, password: str):
+    user = load_users().get("users", {}).get(username.strip())
+    if not user or not user.get("is_admin"):
         return None
     if not user.get("is_active", True):
         return None
-    if user["password"] != hash_password(password):
+    if user.get("password") != hash_password(password):
         return None
     return user
-
-
-def register_user(username: str, password: str, full_name: str, kontakt: str):
-    data = load_users()
-    users = data.setdefault("users", {})
-    if username in users:
-        return False, "Benutzername ist bereits vergeben."
-    users[username] = {
-        "password": hash_password(password),
-        "approved": False,
-        "is_admin": False,
-        "full_name": full_name,
-        "kontakt": kontakt,
-        "created_at": datetime.utcnow().isoformat(),
-        "is_active": True,
-    }
-    save_users(data)
-    return True, "Registrierung erfolgreich. Dein Konto muss zuerst freigeschaltet werden."
 
 
 def append_row_to_csv(path: Path, fieldnames, row: dict):
@@ -197,508 +255,408 @@ def append_row_to_csv(path: Path, fieldnames, row: dict):
         writer.writerow(row)
 
 
-st.set_page_config(
-    page_title="Sportbox Henggart",
-    layout="wide"
-)
-
-if "user" not in st.session_state:
-    st.session_state.user = None
-if "is_admin" not in st.session_state:
-    st.session_state.is_admin = False
-if "is_approved" not in st.session_state:
-    st.session_state.is_approved = False
-
-st.title("Sportbox Henggart")
-
-with st.sidebar:
-    st.header("Anmeldung")
-
-    if st.session_state.user is None:
-        login_tab, reg_tab = st.tabs(["Login", "Registrierung"])
-
-        with login_tab:
-            with st.form("login_form"):
-                username = st.text_input("Benutzername")
-                password = st.text_input("Passwort", type="password")
-                submitted = st.form_submit_button("Login")
-
-            if submitted:
-                user = authenticate(username, password)
-                if user is None:
-                    st.error("Login fehlgeschlagen.")
-                else:
-                    st.session_state.user = username
-                    st.session_state.is_admin = user.get("is_admin", False)
-                    st.session_state.is_approved = user.get("approved", False)
-                    st.success(f"Angemeldet als {username}")
-                    st.rerun()
-
-        with reg_tab:
-            with st.form("reg_form"):
-                reg_username = st.text_input("Gewünschter Benutzername")
-                reg_fullname = st.text_input("Vollständiger Name")
-                reg_kontakt = st.text_input("Kontakt (E-Mail / Handy, optional)")
-                reg_password = st.text_input("Passwort", type="password")
-                reg_password2 = st.text_input("Passwort wiederholen", type="password")
-                reg_rules = st.checkbox("Ich halte mich an die Regeln")
-                reg_submitted = st.form_submit_button("Registrieren")
-
-            if reg_submitted:
-                if reg_password != reg_password2:
-                    st.error("Passwörter stimmen nicht überein.")
-                elif not reg_username:
-                    st.error("Benutzername darf nicht leer sein.")
-                elif not reg_password:
-                    st.error("Passwort darf nicht leer sein.")
-                elif not reg_rules:
-                    st.error("Bitte bestätige, dass du dich an die Regeln hältst.")
-                else:
-                    ok, msg = register_user(
-                        reg_username,
-                        reg_password,
-                        reg_fullname,
-                        reg_kontakt
-                    )
-                    if ok:
-                        st.success(msg)
-                    else:
-                        st.error(msg)
-    else:
-        st.write(f"Angemeldet als **{st.session_state.user}**")
-        if st.session_state.is_admin:
-            st.info("Admin-Konto")
-        elif not st.session_state.is_approved:
-            st.warning("Dein Konto wurde noch nicht freigeschaltet.")
-
-        if st.button("Logout"):
-            st.session_state.user = None
-            st.session_state.is_admin = False
-            st.session_state.is_approved = False
-            st.rerun()
-
-user = st.session_state.user
-is_admin = st.session_state.is_admin
-is_approved = st.session_state.is_approved or is_admin
-
-if is_admin:
-    tab_info, tab_material, tab_defekt, tab_wunsch, tab_code, tab_admin = st.tabs(
-        [
-            "Regeln & Infos",
-            "Material",
-            "Defekte / Verluste melden",
-            "Material wünschen",
-            "Aktueller Code",
-            "Admin"
-        ]
-    )
-else:
-    tab_info, tab_material, tab_defekt, tab_wunsch, tab_code = st.tabs(
-        [
-            "Regeln & Infos",
-            "Material",
-            "Defekte / Verluste melden",
-            "Material wünschen",
-            "Aktueller Code"
-        ]
+def render_lock(code: str) -> None:
+    digits = list(code)
+    html_digits = []
+    for index, digit in enumerate(digits):
+        html_digits.append(f"<div class='lock-digit'>{html.escape(digit)}</div>")
+        if index < len(digits) - 1:
+            html_digits.append("<div class='lock-divider'></div>")
+    st.markdown(LOCK_CSS, unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='lock-wrap'>{''.join(html_digits)}</div>",
+        unsafe_allow_html=True,
     )
 
-with tab_info:
-    st.subheader("Regeln für die Nutzung")
-    if Path("bild.png").exists():
-        st.image("bild.png", caption="Aktueller Inhalt und Ordnung", width=700)
-    st.markdown("""
-**Wer darf die Sportbox benutzen?**
 
-- Die Sportbox ist für Kinder und Jugendliche aus Henggart und deren Begleitpersonen.
-- Die Nutzung ist nur für registrierte Personen erlaubt.
-- Der aktuelle Zahlencode darf nicht an Unbeteiligte weitergegeben werden.
+def render_contact() -> None:
+    codes = ",".join(str(code) for code in CONTACT_CHAR_CODES)
+    st.html(
+        """
+        <div data-nosnippet>
+          <strong>Kontakt</strong><br>
+          Bei Fragen oder Rückmeldungen per E-Mail:<br>
+          <strong id="sportbox-mail"></strong>
+        </div>
+        <script>
+          const target = document.getElementById("sportbox-mail");
+          if (target) {
+            target.textContent = String.fromCharCode(%s);
+          }
+        </script>
+        """
+        % codes,
+        unsafe_allow_javascript=True,
+    )
 
-**So funktioniert die Ausleihe**
 
-1. Box mit dem aktuellen Code öffnen.
-2. Material auswählen und sorgfältig herausnehmen.
-3. Nach dem Spielen:
-   - Alles vollständig wieder zurücklegen
-   - Stark verschmutztes Material kurz reinigen
-   - Box wieder schliessen und Zahlen verdrehen
+def render_rules() -> None:
+    st.subheader("Regeln")
+    text_col, image_col = st.columns([1.25, 0.75], gap="large")
+    with text_col:
+        st.markdown(RULES_MARKDOWN)
+        render_contact()
+    with image_col:
+        image_path = Path("bild.png")
+        if image_path.exists():
+            st.image(
+                str(image_path),
+                caption="Aktueller Inhalt und Ordnung",
+                width="stretch",
+            )
 
-**Sorgfältiger Umgang mit dem Material**
 
-- Geht mit allen Sachen so um, als wären es eure eigenen.
-- Verwendet das Material nur für den vorgesehenen Zweck.
-- Kein mutwilliges Beschädigen des Materials.
+def render_code_gate() -> None:
+    st.subheader("Zahlencode")
+    if not st.session_state.rules_accepted:
+        st.markdown(
+            "Der Code bleibt verborgen, bis du die Regeln gelesen und bestätigt hast."
+        )
+        agrees = st.checkbox(
+            "Ich habe die Regeln gelesen und halte mich daran.",
+            key="rules_checkbox",
+        )
+        if st.button(
+            "Regeln bestätigen",
+            type="primary",
+            disabled=not agrees,
+            key="confirm_rules",
+            help="Zuerst das Kästchen aktivieren.",
+            width="stretch",
+        ):
+            if agrees:
+                st.session_state.rules_accepted = True
+                st.rerun()
+        return
 
-**Defekte und Verluste**
+    cfg = load_config()
+    current_code = str(cfg.get("current_code", "----")).strip() or "----"
+    st.success("Regeln bestätigt. Bitte gib den Code nicht weiter.")
+    render_lock(current_code)
+    st.caption(
+        "Nach dem Spielen alles zurücklegen, die Box schliessen und die Zahlen verdrehen."
+    )
+    if st.button("Code ausblenden", key="hide_code"):
+        st.session_state.rules_accepted = False
+        st.session_state.rules_checkbox = False
+        st.rerun()
 
-- Meldet Defekte oder Verluste möglichst rasch über das Formular in diesem Tool.
-- Nur so können wir Material reparieren oder ersetzen.
 
-**Sicherheit**
+def render_material_card(item: dict) -> None:
+    name = (item.get("name") or "").strip() or "Ohne Namen"
+    marke = (item.get("marke") or "").strip()
+    menge = item.get("menge", "")
+    einheit = (item.get("einheit") or "").strip()
+    preis = (item.get("preis") or "").strip()
+    details = (item.get("details") or "").strip()
+    bild = (item.get("bild") or "").strip()
+    menge_text = f"{menge} {einheit}".strip()
 
-- Achtet auf andere Kinder, Velos, Autos und Fenster.
-- Kein Spielen auf der Strasse oder an gefährlichen Orten.
+    with st.container(border=True):
+        st.markdown(f"**{name}**")
+        if marke:
+            st.caption(marke)
+        if bild:
+            st.image(bild, width="stretch")
+        meta = [part for part in (menge_text, preis) if part]
+        if meta:
+            st.write(" · ".join(meta))
+        if details:
+            st.caption(details)
 
-**Kontakt**
 
-Bei Fragen oder Rückmeldungen:
-- an Luca per WhatsApp: +41 xx xxx xx xx
-- oder per E-Mail: xxxxx@xxxx.ch
-""")
-
-with tab_material:
-    st.subheader("Aktuelle Ausstattung der Sportbox")
+def render_materials() -> None:
+    st.subheader("Aktuelle Ausstattung")
     items = load_materials()
+    if not items:
+        st.info("Aktuell ist kein Material eingetragen.")
+        return
 
-    cols = st.columns(3)
-    for idx, item in enumerate(items):
-        col = cols[idx % 3]
-        with col:
-            with st.container(border=True):
+    st.caption(f"{len(items)} Gegenstände in der Box")
+    for category, category_items in group_materials(items).items():
+        st.markdown(f"### {category}")
+        columns = st.columns(3, gap="medium")
+        for index, item in enumerate(category_items):
+            with columns[index % 3]:
+                render_material_card(item)
 
-                st.markdown(f"**{item['name']}**")
-                
-                st.image(item["bild"], width=240)
 
-                st.markdown(
-                    f"<div style='margin: 0;'>{item['kategorie']}</div>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    f"<div style='margin: 0;'>{item['menge']} {item['einheit']}</div>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    f"<div style='margin: 0;'>{item['preis']}</div>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    f"<div style='margin: 0;'>{item['details']}</div>",
-                    unsafe_allow_html=True,
-                )
-
-with tab_defekt:
+def render_defect_form() -> None:
     st.subheader("Defekt oder Verlust melden")
-    st.markdown("Bitte melde Defekte oder Verluste, damit wir Material reparieren oder ersetzen können.")
+    st.markdown(
+        "Bitte melde Defekte oder Verluste, damit wir Material reparieren oder ersetzen können."
+    )
 
     with st.form("defekt_form"):
         name = st.text_input("Dein Name")
-        kontakt = st.text_input("Kontakt (WhatsApp / E-Mail, optional)")
+        kontakt = st.text_input("Kontakt (E-Mail, optional)")
         datum = st.date_input("Datum", value=date.today())
         art = st.selectbox("Art der Meldung", ["Defekt", "Verlust"])
         materials = load_materials()
-        material = st.selectbox(
-            "Betroffenes Material",
-            material_options(materials),
-        )
+        material = st.selectbox("Betroffenes Material", material_options(materials))
         anzahl = st.number_input("Anzahl betroffen", min_value=1, step=1, value=1)
         beschreibung = st.text_area(
             "Kurz beschreiben, was passiert ist",
-            help="Z.B. wann, wie, bei welchem Spiel etc."
+            help="Z.B. wann, wie, bei welchem Spiel etc.",
         )
         submitted = st.form_submit_button("Meldung senden")
 
-        if submitted:
-            row = {
-                "timestamp": str(st.session_state.get("timestamp_now", "")) or pd.Timestamp.utcnow().isoformat(),
-                "name": name,
-                "kontakt": kontakt,
-                "datum": str(datum),
-                "art": art,
-                "material": material,
-                "anzahl": anzahl,
-                "beschreibung": beschreibung,
-                "user": user or "",
-            }
-            append_row_to_csv(
-                DEFECTS_FILE,
-                fieldnames=[
-                    "timestamp",
-                    "name",
-                    "kontakt",
-                    "datum",
-                    "art",
-                    "material",
-                    "anzahl",
-                    "beschreibung",
-                    "user",
-                ],
-                row=row,
-            )
-            st.success("Danke! Deine Meldung wurde gespeichert.")
-            st.write("**Zusammenfassung deiner Meldung:**")
-            st.write(f"- Name: {name}")
-            st.write(f"- Kontakt: {kontakt}")
-            st.write(f"- Datum: {datum}")
-            st.write(f"- Art: {art}")
-            st.write(f"- Material: {material}")
-            st.write(f"- Anzahl: {anzahl}")
-            st.write(f"- Beschreibung: {beschreibung}")
+    if submitted:
+        row = {
+            "timestamp": utc_now(),
+            "name": name,
+            "kontakt": kontakt,
+            "datum": str(datum),
+            "art": art,
+            "material": material,
+            "anzahl": anzahl,
+            "beschreibung": beschreibung,
+            "user": "",
+        }
+        append_row_to_csv(
+            DEFECTS_FILE,
+            fieldnames=[
+                "timestamp",
+                "name",
+                "kontakt",
+                "datum",
+                "art",
+                "material",
+                "anzahl",
+                "beschreibung",
+                "user",
+            ],
+            row=row,
+        )
+        st.success("Danke! Deine Meldung wurde gespeichert.")
+        st.write("**Zusammenfassung deiner Meldung:**")
+        st.write(f"- Name: {name}")
+        st.write(f"- Kontakt: {kontakt}")
+        st.write(f"- Datum: {datum}")
+        st.write(f"- Art: {art}")
+        st.write(f"- Material: {material}")
+        st.write(f"- Anzahl: {anzahl}")
+        st.write(f"- Beschreibung: {beschreibung}")
 
-with tab_wunsch:
+
+def render_wish_form() -> None:
     st.subheader("Materialwunsch einreichen")
-    st.markdown("Du hast eine Idee, welches Material in der Sportbox noch fehlt? Sende uns deinen Wunsch.")
+    st.markdown(
+        "Du hast eine Idee, welches Material in der Sportbox noch fehlt? Sende uns deinen Wunsch."
+    )
 
     with st.form("wunsch_form"):
-        name_w = st.text_input("Dein Name")
-        kontakt_w = st.text_input("Kontakt (WhatsApp / E-Mail, optional)")
+        name_w = st.text_input("Dein Name", key="wish_name")
+        kontakt_w = st.text_input(
+            "Kontakt (E-Mail, optional)",
+            key="wish_kontakt",
+        )
         wunsch = st.text_area("Was wünschst du dir? Hast du einen Link zum Produkt?")
         begruendung = st.text_area("Warum wäre das sinnvoll?")
         submitted_w = st.form_submit_button("Wunsch senden")
 
-        if submitted_w:
-            row = {
-                "timestamp": pd.Timestamp.utcnow().isoformat(),
-                "name": name_w,
-                "kontakt": kontakt_w,
-                "wunsch": wunsch,
-                "begruendung": begruendung,
-                "user": user or "",
-            }
-            append_row_to_csv(
-                WISHES_FILE,
-                fieldnames=[
-                    "timestamp",
-                    "name",
-                    "kontakt",
-                    "wunsch",
-                    "begruendung",
-                    "user",
-                ],
-                row=row,
-            )
-            st.success("Danke für deinen Vorschlag! Er wurde gespeichert.")
-            st.write("**Dein Wunsch:**")
-            st.write(f"- Name: {name_w}")
-            st.write(f"- Kontakt: {kontakt_w}")
-            st.write(f"- Wunsch: {wunsch}")
-            st.write(f"- Begründung: {begruendung}")
+    if submitted_w:
+        row = {
+            "timestamp": utc_now(),
+            "name": name_w,
+            "kontakt": kontakt_w,
+            "wunsch": wunsch,
+            "begruendung": begruendung,
+            "user": "",
+        }
+        append_row_to_csv(
+            WISHES_FILE,
+            fieldnames=[
+                "timestamp",
+                "name",
+                "kontakt",
+                "wunsch",
+                "begruendung",
+                "user",
+            ],
+            row=row,
+        )
+        st.success("Danke für deinen Vorschlag! Er wurde gespeichert.")
+        st.write("**Dein Wunsch:**")
+        st.write(f"- Name: {name_w}")
+        st.write(f"- Kontakt: {kontakt_w}")
+        st.write(f"- Wunsch: {wunsch}")
+        st.write(f"- Begründung: {begruendung}")
 
-with tab_code:
-    st.subheader("Aktueller Code der Sportbox")
 
-    if user is None:
-        st.warning("Bitte zuerst einloggen, um den aktuellen Code zu sehen.")
-    elif not is_approved:
-        st.warning("Dein Konto wurde noch nicht freigeschaltet. Bitte wende dich an die zuständige Person.")
+def render_admin() -> None:
+    st.caption("Code, Material und eingegangene Meldungen.")
+
+    st.markdown("### Code der Sportbox")
+    cfg = load_config()
+    current_code = cfg.get("current_code", "0000")
+    with st.form("code_form"):
+        new_code = st.text_input("Aktueller Code", value=current_code)
+        save_code = st.form_submit_button("Code speichern")
+    if save_code:
+        cfg["current_code"] = new_code.strip()
+        save_config(cfg)
+        st.success("Code aktualisiert.")
+
+    st.divider()
+    st.markdown("### Material verwalten")
+    materials = load_materials()
+    df_materials = pd.DataFrame(materials)
+    material_columns = [
+        "kategorie",
+        "name",
+        "marke",
+        "menge",
+        "einheit",
+        "preis",
+        "details",
+        "bild",
+    ]
+    if df_materials.empty:
+        df_materials = pd.DataFrame(columns=material_columns)
     else:
-        cfg = load_config()
-        st.info("Bitte gib den Code nicht an Unbeteiligte weiter.")
-        current_code = str(cfg.get("current_code", "----")).strip()
-        if current_code == "":
-            current_code = "----"
-        digits = list(current_code)
+        df_materials = df_materials.reindex(columns=material_columns)
 
-        st.markdown(
-            """
-            <style>
-            .lock-wrap {
-                display: flex;
-                gap: 12px;
-                align-items: center;
-                justify-content: center;
-                padding: 14px 18px;
-                background: linear-gradient(180deg, #f3f5f9 0%, #e7ebf3 100%);
-                border: 1px solid #d4d9e4;
-                border-radius: 14px;
-                box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-                max-width: 420px;
-                margin: 0 auto;
-            }
-            .lock-digit {
-                width: 56px;
-                height: 72px;
-                border-radius: 10px;
-                background: linear-gradient(180deg, #ffffff 0%, #dfe4ee 100%);
-                border: 1px solid #c6ccda;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 32px;
-                font-weight: 700;
-                color: #202636;
-                text-shadow: 0 1px 0 rgba(255,255,255,0.7);
-                box-shadow: inset 0 2px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.08);
-                font-family: "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-            }
-            .lock-divider {
-                width: 6px;
-                height: 56px;
-                border-radius: 999px;
-                background: #b6bdcc;
-                box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
+    with st.form("materials_form"):
+        edited_materials = st.data_editor(
+            df_materials,
+            num_rows="dynamic",
+            width="stretch",
         )
+        save_materials_btn = st.form_submit_button("Material speichern")
 
-        html_digits = []
-        for i, digit in enumerate(digits):
-            html_digits.append(f"<div class='lock-digit'>{digit}</div>")
-            if i < len(digits) - 1:
-                html_digits.append("<div class='lock-divider'></div>")
-
-        st.markdown(
-            f"<div class='lock-wrap'>{''.join(html_digits)}</div>",
-            unsafe_allow_html=True,
-        )
-
-if is_admin:
-    with tab_admin:
-        st.subheader("Admin-Bereich")
-
-        st.markdown("### Nutzerverwaltung")
-        data_users = load_users()
-        users = data_users.get("users", {})
-        non_admin_users = {u: v for u, v in users.items() if not v.get("is_admin", False)}
-
-        all_rows = []
-        for username, info in users.items():
-            all_rows.append(
-                {
-                    "username": username,
-                    "full_name": info.get("full_name", ""),
-                    "kontakt": info.get("kontakt", ""),
-                    "approved": info.get("approved", False),
-                    "is_admin": info.get("is_admin", False),
-                    "is_active": info.get("is_active", True),
-                    "created_at": info.get("created_at", ""),
-                    "password": info.get("password", ""),
-                }
-            )
-
-        if all_rows:
-            st.dataframe(pd.DataFrame(all_rows), use_container_width=True)
-
-        if not non_admin_users:
-            st.info("Keine registrierten Nutzer (ausser Admin).")
-        else:
-            with st.form("approve_users_form"):
-                approved_states = {}
-                active_states = {}
-                st.write("**Freigabe und Aktiv-Status**")
-                for username, info in non_admin_users.items():
-                    label = f"{username}"
-                    full_name = info.get("full_name", "").strip()
-                    if full_name:
-                        label += f" ({full_name})"
-                    col_user, col_approved, col_active = st.columns([3, 1, 1])
-                    with col_user:
-                        st.write(label)
-                    with col_approved:
-                        approved_states[username] = st.checkbox(
-                            "Freigabe",
-                            value=info.get("approved", False),
-                            key=f"approved_{username}"
-                        )
-                    with col_active:
-                        active_states[username] = st.checkbox(
-                            "Aktiv",
-                            value=info.get("is_active", True),
-                            key=f"active_{username}"
-                        )
-                submit_approvals = st.form_submit_button("Änderungen speichern")
-
-                if submit_approvals:
-                    for username, state in approved_states.items():
-                        users[username]["approved"] = state
-                    for username, state in active_states.items():
-                        users[username]["is_active"] = state
-                    data_users["users"] = users
-                    save_users(data_users)
-                    st.success("Nutzer aktualisiert.")
-
-        st.markdown("### Code der Sportbox")
-        cfg = load_config()
-        current_code = cfg.get("current_code", "0000")
-
-        with st.form("code_form"):
-            new_code = st.text_input("Aktueller Code", value=current_code)
-            save_code = st.form_submit_button("Code speichern")
-
-            if save_code:
-                cfg["current_code"] = new_code.strip()
-                save_config(cfg)
-                st.success("Code aktualisiert.")
-
-        st.divider()
-        st.markdown("### Material verwalten")
-        materials = load_materials()
-        df_materials = pd.DataFrame(materials)
-        material_columns = [
-            "kategorie",
-            "name",
-            "marke",
-            "menge",
-            "einheit",
-            "preis",
-            "details",
-            "bild",
-        ]
-        if df_materials.empty:
-            df_materials = pd.DataFrame(columns=material_columns)
-        else:
-            df_materials = df_materials.reindex(columns=material_columns)
-
-        with st.form("materials_form"):
-            edited_materials = st.data_editor(
-                df_materials,
-                num_rows="dynamic",
-                use_container_width=True,
-            )
-            save_materials_btn = st.form_submit_button("Material speichern")
-
-        if save_materials_btn:
-            cleaned = []
-            records = edited_materials.to_dict(orient="records")
-            for row in records:
-                cleaned_row = {}
-                empty_row = True
-                for col in material_columns:
-                    value = row.get(col, "")
-                    if pd.isna(value):
-                        value = ""
-                    if isinstance(value, str):
-                        value = value.strip()
-                    if value != "":
-                        empty_row = False
-                    cleaned_row[col] = value
-                if empty_row:
-                    continue
-                menge = cleaned_row.get("menge", "")
-                try:
-                    if menge != "":
-                        menge_int = int(float(menge))
-                        cleaned_row["menge"] = menge_int
-                except (ValueError, TypeError):
-                    pass
-                cleaned.append(cleaned_row)
-            save_materials(cleaned)
-            st.success("Material gespeichert.")
-        st.divider()
-        st.markdown("### Defekte / Verluste")
-        if DEFECTS_FILE.exists():
+    if save_materials_btn:
+        cleaned = []
+        for row in edited_materials.to_dict(orient="records"):
+            cleaned_row = {}
+            empty_row = True
+            for col in material_columns:
+                value = row.get(col, "")
+                if pd.isna(value):
+                    value = ""
+                if isinstance(value, str):
+                    value = value.strip()
+                if value != "":
+                    empty_row = False
+                cleaned_row[col] = value
+            if empty_row:
+                continue
+            menge = cleaned_row.get("menge", "")
             try:
-                df_defects = pd.read_csv(DEFECTS_FILE)
-                if df_defects.empty:
-                    st.info("Noch keine Defekt- oder Verlustmeldungen.")
-                else:
-                    st.dataframe(df_defects, use_container_width=True)
-            except Exception:
-                st.error("Defekt-/Verlustdatei konnte nicht gelesen werden.")
-        else:
-            st.info("Noch keine Defekt- oder Verlustmeldungen.")
+                if menge != "":
+                    cleaned_row["menge"] = int(float(menge))
+            except (ValueError, TypeError):
+                pass
+            cleaned.append(cleaned_row)
+        save_materials(cleaned)
+        st.success("Material gespeichert.")
 
-        st.markdown("### Materialwünsche")
-        if WISHES_FILE.exists():
-            try:
-                df_wishes = pd.read_csv(WISHES_FILE)
-                if df_wishes.empty:
-                    st.info("Noch keine Materialwünsche.")
-                else:
-                    st.dataframe(df_wishes, use_container_width=True)
-            except Exception:
-                st.error("Materialwunschdatei konnte nicht gelesen werden.")
+    st.divider()
+    st.markdown("### Defekte / Verluste")
+    if DEFECTS_FILE.exists():
+        try:
+            df_defects = pd.read_csv(DEFECTS_FILE)
+            if df_defects.empty:
+                st.info("Noch keine Defekt- oder Verlustmeldungen.")
+            else:
+                st.dataframe(df_defects, width="stretch")
+        except Exception:
+            st.error("Defekt-/Verlustdatei konnte nicht gelesen werden.")
+    else:
+        st.info("Noch keine Defekt- oder Verlustmeldungen.")
+
+    st.markdown("### Materialwünsche")
+    if WISHES_FILE.exists():
+        try:
+            df_wishes = pd.read_csv(WISHES_FILE)
+            if df_wishes.empty:
+                st.info("Noch keine Materialwünsche.")
+            else:
+                st.dataframe(df_wishes, width="stretch")
+        except Exception:
+            st.error("Materialwunschdatei konnte nicht gelesen werden.")
+    else:
+        st.info("Noch keine Materialwünsche.")
+
+
+def render_admin_access() -> None:
+    if st.session_state.is_admin and st.session_state.user:
+        st.caption(f"Angemeldet als {st.session_state.user}")
+        if st.button("Abmelden", key="admin_logout"):
+            st.session_state.user = None
+            st.session_state.is_admin = False
+            st.rerun()
+        render_admin()
+        return
+
+    st.caption("Anmeldung nur für die Betreuung der Box.")
+    with st.form("admin_login_form"):
+        username = st.text_input("Benutzername", key="admin_username")
+        password = st.text_input("Passwort", type="password", key="admin_password")
+        submitted = st.form_submit_button("Anmelden", width="stretch")
+    if submitted:
+        user = authenticate_admin(username, password)
+        if user is None:
+            st.error("Anmeldung fehlgeschlagen.")
         else:
-            st.info("Noch keine Materialwünsche.")
+            st.session_state.user = username.strip()
+            st.session_state.is_admin = True
+            st.rerun()
+
+
+def init_session() -> None:
+    st.session_state.setdefault("user", None)
+    st.session_state.setdefault("is_admin", False)
+    st.session_state.setdefault("rules_accepted", False)
+
+
+st.set_page_config(
+    page_title="Sportbox Henggart",
+    page_icon="🏀",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+init_session()
+st.html(
+    """
+    <style>
+    [data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsed"],
+    [data-testid="stExpandSidebarButton"],
+    [data-testid="stSidebarCollapseButton"] {
+      display: none !important;
+    }
+    </style>
+    """
+)
+
+st.title("Sportbox Henggart")
+st.markdown(
+    "Gemeinsames Sportmaterial für Kinder und Jugendliche aus Henggart. "
+    "Den Zahlencode siehst du erst, nachdem du die Regeln bestätigt hast."
+)
+
+with st.container(border=True):
+    render_rules()
+
+with st.container(border=True):
+    render_code_gate()
+
+st.divider()
+
+tab_material, tab_defekt, tab_wunsch, tab_admin = st.tabs(
+    ["Material", "Defekt / Verlust", "Materialwunsch", "Verwaltung"]
+)
+
+with tab_material:
+    render_materials()
+
+with tab_defekt:
+    render_defect_form()
+
+with tab_wunsch:
+    render_wish_form()
+
+with tab_admin:
+    render_admin_access()
