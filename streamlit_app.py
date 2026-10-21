@@ -90,13 +90,31 @@ RULES_MARKDOWN = """
 
 - Achtet auf andere Kinder, Velos, Autos und Fenster.
 - Kein Spielen auf der Strasse oder an gefährlichen Orten.
-
-**Kontakt**
-
-Bei Fragen oder Rückmeldungen:
-- an Luca per WhatsApp: +41 xx xxx xx xx
-- oder per E-Mail: xxxxx@xxxx.ch
 """
+
+# Zeichen der Kontaktadresse, damit sie nicht als Klartext im HTML steht.
+CONTACT_CHAR_CODES = (
+    107,
+    111,
+    110,
+    116,
+    97,
+    107,
+    116,
+    64,
+    108,
+    117,
+    99,
+    97,
+    109,
+    101,
+    105,
+    101,
+    114,
+    46,
+    99,
+    104,
+)
 
 
 def utc_now() -> str:
@@ -251,11 +269,33 @@ def render_lock(code: str) -> None:
     )
 
 
+def render_contact() -> None:
+    codes = ",".join(str(code) for code in CONTACT_CHAR_CODES)
+    st.html(
+        """
+        <div data-nosnippet>
+          <strong>Kontakt</strong><br>
+          Bei Fragen oder Rückmeldungen per E-Mail:<br>
+          <strong id="sportbox-mail"></strong>
+        </div>
+        <script>
+          const target = document.getElementById("sportbox-mail");
+          if (target) {
+            target.textContent = String.fromCharCode(%s);
+          }
+        </script>
+        """
+        % codes,
+        unsafe_allow_javascript=True,
+    )
+
+
 def render_rules() -> None:
     st.subheader("Regeln")
     text_col, image_col = st.columns([1.25, 0.75], gap="large")
     with text_col:
         st.markdown(RULES_MARKDOWN)
+        render_contact()
     with image_col:
         image_path = Path("bild.png")
         if image_path.exists():
@@ -349,7 +389,7 @@ def render_defect_form() -> None:
 
     with st.form("defekt_form"):
         name = st.text_input("Dein Name")
-        kontakt = st.text_input("Kontakt (WhatsApp / E-Mail, optional)")
+        kontakt = st.text_input("Kontakt (E-Mail, optional)")
         datum = st.date_input("Datum", value=date.today())
         art = st.selectbox("Art der Meldung", ["Defekt", "Verlust"])
         materials = load_materials()
@@ -408,7 +448,7 @@ def render_wish_form() -> None:
     with st.form("wunsch_form"):
         name_w = st.text_input("Dein Name", key="wish_name")
         kontakt_w = st.text_input(
-            "Kontakt (WhatsApp / E-Mail, optional)",
+            "Kontakt (E-Mail, optional)",
             key="wish_kontakt",
         )
         wunsch = st.text_area("Was wünschst du dir? Hast du einen Link zum Produkt?")
@@ -445,7 +485,6 @@ def render_wish_form() -> None:
 
 
 def render_admin() -> None:
-    st.subheader("Verwaltung")
     st.caption("Code, Material und eingegangene Meldungen.")
 
     st.markdown("### Code der Sportbox")
@@ -540,35 +579,29 @@ def render_admin() -> None:
         st.info("Noch keine Materialwünsche.")
 
 
-def render_sidebar() -> None:
-    with st.sidebar:
-        st.markdown("**Sportbox Henggart**")
-        if st.session_state.is_admin and st.session_state.user:
-            st.caption(f"Angemeldet als {st.session_state.user}")
-            if st.button("Abmelden", key="admin_logout", width="stretch"):
-                st.session_state.user = None
-                st.session_state.is_admin = False
-                st.rerun()
-            return
+def render_admin_access() -> None:
+    if st.session_state.is_admin and st.session_state.user:
+        st.caption(f"Angemeldet als {st.session_state.user}")
+        if st.button("Abmelden", key="admin_logout"):
+            st.session_state.user = None
+            st.session_state.is_admin = False
+            st.rerun()
+        render_admin()
+        return
 
-        with st.expander("Verwaltung"):
-            st.caption("Anmeldung nur für die Betreuung der Box.")
-            with st.form("admin_login_form"):
-                username = st.text_input("Benutzername", key="admin_username")
-                password = st.text_input(
-                    "Passwort",
-                    type="password",
-                    key="admin_password",
-                )
-                submitted = st.form_submit_button("Anmelden", width="stretch")
-            if submitted:
-                user = authenticate_admin(username, password)
-                if user is None:
-                    st.error("Anmeldung fehlgeschlagen.")
-                else:
-                    st.session_state.user = username.strip()
-                    st.session_state.is_admin = True
-                    st.rerun()
+    st.caption("Anmeldung nur für die Betreuung der Box.")
+    with st.form("admin_login_form"):
+        username = st.text_input("Benutzername", key="admin_username")
+        password = st.text_input("Passwort", type="password", key="admin_password")
+        submitted = st.form_submit_button("Anmelden", width="stretch")
+    if submitted:
+        user = authenticate_admin(username, password)
+        if user is None:
+            st.error("Anmeldung fehlgeschlagen.")
+        else:
+            st.session_state.user = username.strip()
+            st.session_state.is_admin = True
+            st.rerun()
 
 
 def init_session() -> None:
@@ -581,10 +614,22 @@ st.set_page_config(
     page_title="Sportbox Henggart",
     page_icon="🏀",
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
 init_session()
-render_sidebar()
+st.html(
+    """
+    <style>
+    [data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsed"],
+    [data-testid="stExpandSidebarButton"],
+    [data-testid="stSidebarCollapseButton"] {
+      display: none !important;
+    }
+    </style>
+    """
+)
 
 st.title("Sportbox Henggart")
 st.markdown(
@@ -600,15 +645,9 @@ with st.container(border=True):
 
 st.divider()
 
-if st.session_state.is_admin:
-    tab_material, tab_defekt, tab_wunsch, tab_admin = st.tabs(
-        ["Material", "Defekt / Verlust", "Materialwunsch", "Verwaltung"]
-    )
-else:
-    tab_material, tab_defekt, tab_wunsch = st.tabs(
-        ["Material", "Defekt / Verlust", "Materialwunsch"]
-    )
-    tab_admin = None
+tab_material, tab_defekt, tab_wunsch, tab_admin = st.tabs(
+    ["Material", "Defekt / Verlust", "Materialwunsch", "Verwaltung"]
+)
 
 with tab_material:
     render_materials()
@@ -619,6 +658,5 @@ with tab_defekt:
 with tab_wunsch:
     render_wish_form()
 
-if tab_admin is not None:
-    with tab_admin:
-        render_admin()
+with tab_admin:
+    render_admin_access()
